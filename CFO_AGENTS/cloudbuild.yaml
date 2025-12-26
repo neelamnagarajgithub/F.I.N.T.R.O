@@ -1,0 +1,30 @@
+steps:
+  - name: 'gcr.io/cloud-builders/docker'
+    args: ['build', '-t', 'gcr.io/$PROJECT_ID/cfo-backend:$SHORT_SHA', '.']
+  - name: 'gcr.io/cloud-builders/docker'
+    args: ['push', 'gcr.io/$PROJECT_ID/cfo-backend:$SHORT_SHA']
+  - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
+    entrypoint: gcloud
+    args:
+      - 'run'
+      - 'deploy'
+      - 'cfo-backend'
+      - '--image'
+      - 'gcr.io/$PROJECT_ID/cfo-backend:$SHORT_SHA'
+      - '--region'
+      - 'us-central1'
+      - '--platform'
+      - 'managed'
+      - '--allow-unauthenticated'
+      - '--set-env-vars'
+      - 'API_BASE_URL=https://fintro-backend-883163069340.asia-south1.run.app , GOOGLE_API_KEY=AIzaSyBqAHjtAmWTEsudA_OUybC2AjjW5qfER2M, MIN_HISTORICAL_DAYS=30,ALLOW_PARTIAL_HISTORY=true'
+      - '--memory'
+      - '1Gi'
+      - '--concurrency'
+      - '80'
+      - '--timeout'
+      - '300s'
+images:
+  - 'gcr.io/$PROJECT_ID/cfo-backend:$SHORT_SHA'
+substitutions:
+  _GOOGLE_API_KEY: 'AIzaSyBqAHjtAmWTEsudA_OUybC2AjjW5qfER2M'

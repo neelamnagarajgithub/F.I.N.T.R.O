@@ -1,0 +1,213 @@
+generator client {
+  provider = "prisma-client-js"
+  output   = "../generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model Organization {
+  org_id                BigInt   @id @default(autoincrement())
+  org_name              String
+  industry              String?
+  state                 String?
+  current_balance       Decimal?
+  annual_revenue_range  String?
+  annual_revenue        Decimal
+  employee_count        Int?
+  cashflow_type         String?
+  status                String   @default("active")
+  created_at            DateTime @default(now())
+
+  customers              Customer[]
+  invoices               Invoice[]
+  bills                  Bill[]
+  payments               Payment[]
+  cashflowAnalysis       CashflowAnalysis[]
+  cashflowForecasts      CashFlowForecast[]
+  anomalies               Anomaly[]
+  liquidityCollisions     LiquidityCollision[]
+  collectionsQueue        CollectionQueue[]
+  scenarioSimulations     ScenarioSimulation[]
+  copilotConversations   CopilotConversation[]
+}
+
+model Customer {
+  customer_id                 BigInt   @id @default(autoincrement())
+  org_id                      BigInt
+  customer_name               String?
+  credit_terms_days           Int      @default(30)
+  total_outstanding_ar        Decimal?
+  payment_reliability_score   Float?
+  dso_days                    Int?
+  status                      String?
+  created_at                  DateTime @default(now())
+
+  organization                Organization @relation(fields: [org_id], references: [org_id])
+  invoices                    Invoice[]
+  collectionsQueue            CollectionQueue[]
+}
+
+
+model Invoice {
+  invoice_id        BigInt   @id @default(autoincrement())
+  org_id            BigInt
+  customer_id       BigInt
+  invoice_number    String?
+  invoice_date      DateTime?
+  due_date          DateTime?
+  amount            Decimal
+  payment_status    String?
+  paid_amount       Decimal?
+  remaining_amount  Decimal?
+  created_at        DateTime @default(now())
+
+  organization      Organization @relation(fields: [org_id], references: [org_id])
+  customer          Customer     @relation(fields: [customer_id], references: [customer_id])
+
+  @@index([org_id, invoice_date(sort: Desc)])
+  @@index([customer_id])
+}
+
+
+model Bill {
+  bill_id           BigInt  @id @default(autoincrement())
+  org_id            BigInt
+  bill_number       String?
+  vendor_name       String?
+  bill_date         DateTime?
+  due_date          DateTime?
+  amount            Decimal
+  expense_category  String?
+  payment_status    String?
+  created_at        DateTime @default(now())
+
+  organization      Organization @relation(fields: [org_id], references: [org_id])
+
+  @@index([org_id, due_date(sort: Asc)])
+}
+
+
+model Payment {
+  payment_id      BigInt   @id @default(autoincrement())
+  org_id          BigInt
+  payment_date    DateTime?
+  payment_amount  Decimal
+  payment_type    String?   // inflow / outflow
+  description     String?
+  created_at      DateTime @default(now())
+  status          String?
+  organization    Organization @relation(fields: [org_id], references: [org_id])
+
+  @@index([org_id, payment_date(sort: Desc)])
+}
+
+
+model CashflowAnalysis {
+  analysis_id            BigInt   @id @default(autoincrement())
+  org_id                 BigInt
+  analysis_date           DateTime?
+  current_balance         Decimal?
+  dso_days                Float?
+  dpo_days                Float?
+  liquidity_ratio         Float?
+  cash_health_score       Float?
+  cash_conversion_cycle   Int?
+  created_at              DateTime @default(now())
+
+  organization             Organization @relation(fields: [org_id], references: [org_id])
+}
+
+model CashFlowForecast {
+  forecast_id        BigInt   @id @default(autoincrement())
+  org_id             BigInt
+  forecast_date       DateTime?
+  predicted_balance   Decimal
+  confidence_95       Decimal?
+  confidence_5        Decimal?
+  model_version       String?
+  mape                Float?
+  created_at          DateTime @default(now())
+
+  organization        Organization @relation(fields: [org_id], references: [org_id])
+
+  @@index([org_id, forecast_date(sort: Asc)])
+}
+
+
+model Anomaly {
+  anomaly_id        BigInt   @id @default(autoincrement())
+  org_id            BigInt
+  anomaly_type      String?
+  severity          String?
+  entity_type       String?
+  entity_id         BigInt?
+  detected_date     DateTime?
+  baseline_value    Decimal?
+  actual_value      Decimal?
+  is_resolved       Boolean  @default(false)
+  created_at        DateTime @default(now())
+
+  organization      Organization @relation(fields: [org_id], references: [org_id])
+}
+
+
+model LiquidityCollision {
+  collision_id      BigInt   @id @default(autoincrement())
+  org_id            BigInt
+  collision_date    DateTime?
+  deficit_amount    Decimal?
+  severity          String?
+  expense_breakdown Json?
+  is_resolved       Boolean  @default(false)
+  created_at        DateTime @default(now())
+
+  organization      Organization @relation(fields: [org_id], references: [org_id])
+
+  @@index([org_id, collision_date(sort: Asc)])
+}
+
+
+model CollectionQueue {
+  queue_id            BigInt   @id @default(autoincrement())
+  org_id              BigInt
+  customer_id         BigInt
+  invoice_id          BigInt?
+  priority_rank       Int?
+  priority_score      Float?
+  days_overdue        Int?
+  amount              Decimal?
+  success_probability Float?
+  action_taken        String?
+  created_at          DateTime @default(now())
+
+  organization        Organization @relation(fields: [org_id], references: [org_id])
+  customer            Customer     @relation(fields: [customer_id], references: [customer_id])
+}
+
+
+model ScenarioSimulation {
+  scenario_id      BigInt   @id @default(autoincrement())
+  org_id           BigInt
+  scenario_name    String?
+  scenario_date    DateTime?
+  levers_applied   Json?
+  impact_vs_base   Decimal?
+  created_at       DateTime @default(now())
+
+  organization     Organization @relation(fields: [org_id], references: [org_id])
+}
+
+
+model CopilotConversation {
+  conversation_id   BigInt   @id @default(autoincrement())
+  org_id            BigInt
+  question          String
+  response          String?
+  confidence_score  Float?
+  created_at        DateTime @default(now())
+
+  organization      Organization @relation(fields: [org_id], references: [org_id])
+}
+
